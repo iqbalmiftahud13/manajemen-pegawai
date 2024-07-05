@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Pegawai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Yajra\DataTables\DataTables;
 
 class PegawaiController extends Controller
 {
@@ -14,8 +17,10 @@ class PegawaiController extends Controller
      */
     public function index()
     {
-        $pegawai = Pegawai::all();
-        return view('pegawai.index', compact('pegawai'));
+        if (request()->ajax()) {
+            return DataTables::of(Pegawai::all())->make(true);
+        }
+        return view('pages.pegawai.index');
     }
 
     /**
@@ -25,7 +30,7 @@ class PegawaiController extends Controller
      */
     public function create()
     {
-        return view('pegawai.create');
+        //
     }
 
     /**
@@ -36,31 +41,29 @@ class PegawaiController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $input = $request->all();
+
+        $data = Validator::make($input, [
             'nama_lengkap' => 'required',
             'alamat' => 'required',
             'telepon' => 'required',
-            'email' => 'required|email|unique:pegawais,email',
+            'email' => 'required|email',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+            'jabatan' => 'required',
+            'gaji' => 'required',
+        ])->validate();
 
-        $pegawai = new Pegawai();
-        $pegawai->nama_lengkap = $request->nama_lengkap;
-        $pegawai->alamat = $request->alamat;
-        $pegawai->telepon = $request->telepon;
-        $pegawai->email = $request->email;
-
-        // Handle photo upload if provided
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $photoPath = $photo->store('public/photos');
-            $pegawai->photo = $photoPath;
+        $file_url = null;
+        if (!empty($request->file('photo'))) {
+            $file = $request->file('photo');
+            $file_url = $file->store('pegawai', 'public');
         }
 
-        $pegawai->save();
+        $data['photo'] = $file_url;
+        Pegawai::create($data);
 
-        return redirect()->route('pegawai.index')
-            ->with('success', 'Pegawai berhasil ditambahkan.');
+        return $this->sendResponse($data, 201, 'Data Berhasil Ditambahkan');
+
     }
 
     /**
@@ -71,7 +74,7 @@ class PegawaiController extends Controller
      */
     public function edit(Pegawai $pegawai)
     {
-        return view('pegawai.edit', compact('pegawai'));
+        //
     }
 
     /**
@@ -81,32 +84,36 @@ class PegawaiController extends Controller
      * @param  \App\Models\Pegawai  $pegawai
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Pegawai $pegawai)
+    public function update(Request $request)
     {
-        $request->validate([
+        $input = $request->all();
+
+        $pegawai = Pegawai::findOrFail($request->id);
+
+        $data = Validator::make($input, [
             'nama_lengkap' => 'required',
             'alamat' => 'required',
             'telepon' => 'required',
-            'email' => 'required|email|unique:pegawais,email,'.$pegawai->id,
+            'email' => 'required|email',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+            'jabatan' => 'required',
+            'gaji' => 'required',
+        ])->validate();
 
-        $pegawai->nama_lengkap = $request->nama_lengkap;
-        $pegawai->alamat = $request->alamat;
-        $pegawai->telepon = $request->telepon;
-        $pegawai->email = $request->email;
-
-        // Handle photo update if provided
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $photoPath = $photo->store('public/photos');
-            $pegawai->photo = $photoPath;
+        $file_url = null;
+        if (!empty($request->file('photo'))) {
+            Storage::delete('public/pegawai/' . $pegawai->photo);
+            $file = $request->file('photo');
+            $file_url = $file->store('pegawai', 'public');
+        } else {
+            $file_url = $pegawai->photo;
         }
 
-        $pegawai->save();
+        $data['photo'] = $file_url;
 
-        return redirect()->route('pegawai.index')
-            ->with('success', 'Pegawai berhasil diperbarui.');
+        $pegawai->update($data);
+
+        return $this->sendResponse($data, 201, 'Data Berhasil Diperbarui');
     }
 
     /**
@@ -115,11 +122,15 @@ class PegawaiController extends Controller
      * @param  \App\Models\Pegawai  $pegawai
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Pegawai $pegawai)
+    public function destroy(String $id)
     {
+        $pegawai = Pegawai::findOrFail($id);
+
+        Storage::delete('public/pegawai/' . $pegawai->photo);
+
         $pegawai->delete();
 
-        return redirect()->route('pegawai.index')
-            ->with('success', 'Pegawai berhasil dihapus.');
+        return redirect()->route('pegawai.index')->with(['success' => 'Data Berhasil Dihapus']);
+
     }
 }

@@ -23,10 +23,10 @@
                     <li class="menu-box">
                         <ul>
                             <li class="sidebar-list"><a class="sidebar-link sidebar-title link-nav"
-                                    href="#">
+                                    href="{{ route('dashboard') }}">
                                     <i data-feather="home"></i><span>Dashboard</span></a></li>
                             <li class="sidebar-list"><a class="sidebar-link sidebar-title link-nav"
-                                    href="#">
+                                    href="{{ route('pegawai.index') }}">
                                     <i data-feather="user"></i><span>Pegawai</span></a></li>
                         </ul>
                     </li>
