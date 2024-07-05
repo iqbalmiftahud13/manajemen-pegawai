@@ -25,9 +25,12 @@
                             <li class="sidebar-list"><a class="sidebar-link sidebar-title link-nav"
                                     href="{{ route('dashboard') }}">
                                     <i data-feather="home"></i><span>Dashboard</span></a></li>
-                            <li class="sidebar-list"><a class="sidebar-link sidebar-title link-nav"
-                                    href="{{ route('pegawai.index') }}">
-                                    <i data-feather="user"></i><span>Pegawai</span></a></li>
+                            @if (Auth::check() && Auth::user()->is_admin)
+                                <li class="sidebar-list"><a class="sidebar-link sidebar-title link-nav"
+                                        href="{{ route('pegawai.index') }}">
+                                        <i data-feather="user"></i><span>Pegawai</span></a>
+                                </li>
+                            @endif
                         </ul>
                     </li>
                 </ul>
